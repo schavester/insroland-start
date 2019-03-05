@@ -23,12 +23,12 @@ module.exports = {
       resolve: 'gatsby-source-wordpress',
       options: {
         // The base url to your WP site.
-        baseUrl: 'insroland.hiddenhistoryblogs.com',
+        baseUrl: 'gatsby.migrate-esotouric.com',
         // baseUrl: 'wpgatsby.wtf',
         // WP.com sites set to true, WP.org set to false
         hostingWPCOM: false,
         // The protocol. This can be http or https.
-        protocol: 'https',
+        protocol: 'http',
         // Use 'Advanced Custom Fields' Wordpress plugin
         useACF: true,
         auth: {},
