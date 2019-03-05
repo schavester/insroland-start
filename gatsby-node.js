@@ -1,87 +1,64 @@
-const _ = require('lodash')
-const path = require('path')
-const { createFilePath } = require('gatsby-source-filesystem')
-const { fmImagesToRelative } = require('gatsby-remark-relative-images')
+const _ = require('lodash');
+const Promise = require('bluebird');
+const path = require('path');
+const slash = require('slash');
 
-exports.createPages = ({ actions, graphql }) => {
-  const { createPage } = actions
+// Implement the Gatsby API “createPages”. This is
+// called after the Gatsby bootstrap is finished so you have
+// access to any information necessary to programmatically
+// create pages.
+// Will create pages for Wordpress pages (route : /{slug})
+// Will create pages for Wordpress posts (route : /post/{slug})
+exports.createPages = ({
+  graphql,
+  actions,
+}) => {
+  const {
+    createPage,
+  } = actions;
+  return new Promise((resolve, reject) => {
+    // The “graphql” function allows us to run arbitrary
+    // queries against the local Wordpress graphql schema. Think of
+    // it like the site has a built-in database constructed
+    // from the fetched data that you can run queries against.
 
-  return graphql(`
-    {
-      allMarkdownRemark(limit: 1000) {
-        edges {
-          node {
-            id
-            fields {
-              slug
+    // ==== POSTS (WORDPRESS NATIVE AND ACF) ====
+    graphql(
+      `
+            {
+              allWordpressPost {
+                edges {
+                  node {
+                    id
+                    slug
+                    status
+                    template
+                    format
+                  }
+                }
+              }
             }
-            frontmatter {
-              tags
-              templateKey
-            }
-          }
-        }
+          `,
+    ).then((result) => {
+      if (result.errors) {
+        console.log(result.errors);
+        reject(result.errors);
       }
-    }
-  `).then(result => {
-    if (result.errors) {
-      result.errors.forEach(e => console.error(e.toString()))
-      return Promise.reject(result.errors)
-    }
-
-    const posts = result.data.allMarkdownRemark.edges
-
-    posts.forEach(edge => {
-      const id = edge.node.id
-      createPage({
-        path: edge.node.fields.slug,
-        tags: edge.node.frontmatter.tags,
-        component: path.resolve(
-          `src/templates/${String(edge.node.frontmatter.templateKey)}.js`
-        ),
-        // additional data can be passed via context
-        context: {
-          id,
-        },
-      })
-    })
-
-    // Tag pages:
-    let tags = []
-    // Iterate through each post, putting all found tags into `tags`
-    posts.forEach(edge => {
-      if (_.get(edge, `node.frontmatter.tags`)) {
-        tags = tags.concat(edge.node.frontmatter.tags)
-      }
-    })
-    // Eliminate duplicate tags
-    tags = _.uniq(tags)
-
-    // Make tag pages
-    tags.forEach(tag => {
-      const tagPath = `/tags/${_.kebabCase(tag)}/`
-
-      createPage({
-        path: tagPath,
-        component: path.resolve(`src/templates/tags.js`),
-        context: {
-          tag,
-        },
-      })
-    })
-  })
-}
-
-exports.onCreateNode = ({ node, actions, getNode }) => {
-  const { createNodeField } = actions
-  fmImagesToRelative(node) // convert image paths for gatsby images
-
-  if (node.internal.type === `MarkdownRemark`) {
-    const value = createFilePath({ node, getNode })
-    createNodeField({
-      name: `slug`,
-      node,
-      value,
-    })
-  }
-}
+      const postTemplate = path.resolve('./src/templates/post.js');
+      // We want to create a detailed page for each
+      // post node. We'll just use the Wordpress Slug for the slug.
+      // The Post ID is prefixed with 'POST_'
+      _.each(result.data.allWordpressPost.edges, (edge) => {
+        createPage({
+          path: `/blog/${edge.node.slug}`,
+          component: slash(postTemplate),
+          context: {
+            id: edge.node.id,
+          },
+        });
+      });
+      resolve();
+    });
+    // ==== END POSTS ====
+  });
+};

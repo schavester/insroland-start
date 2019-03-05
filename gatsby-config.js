@@ -1,42 +1,57 @@
+require('dotenv').config({
+  path: '.env',
+});
+const path = require('path');
+
+const siteUrl = 'https://wordpress-gatsby.netlify.com/';
 module.exports = {
   siteMetadata: {
-    title: `A sample site using gatsby-source-wordpress`,
-    subtitle: `Data fetched from a site hosted on wordpress.com`,
+    siteUrl,
+    description: 'Convert your wordpress blog to pwa using gatsby',
+    keyword: 'wordpress, gatsby, blog, pwa',
+    title: 'Wordpress Blog PWA',
   },
   plugins: [
-    // https://public-api.wordpress.com/wp/v2/sites/gatsbyjsexamplewordpress.wordpress.com/pages/
-    /*
-     * Gatsby's data processing layer begins with “source”
-     * plugins. Here the site sources its data from Wordpress.
-     */
     {
-      resolve: `gatsby-source-wordpress`,
+      resolve: 'gatsby-source-wordpress',
       options: {
-        /*
-         * The base URL of the Wordpress site without the trailingslash and the protocol. This is required.
-         * Example : 'dev-gatbsyjswp.pantheonsite.io' or 'www.example-site.com'
-         */
-        baseUrl: `insroland.hiddenhistoryblogs.com`,
-        // The protocol. This can be http or https.
-        protocol: `http`,
-        // Indicates whether the site is hosted on wordpress.com.
-        // If false, then the asumption is made that the site is self hosted.
-        // If true, then the plugin will source its content on wordpress.com using the JSON REST API V2.
-        // If your site is hosted on wordpress.org, then set this to false.
-        hostingWPCOM: false,
-        // If useACF is true, then the source plugin will try to import the Wordpress ACF Plugin contents.
-        // This feature is untested for sites hosted on Wordpress.com
+        baseUrl: 'insroland.hiddenhistoryblogs.com',
+        protocol: 'https',
+        hostingWPCOM: true,
         useACF: true,
+        auth: {
+          wpcom_app_clientSecret: process.env.WORDPRESS_SECRET,
+          wpcom_app_clientId: process.env.WORDPRESS_CLIENTID,
+          wpcom_user: process.env.WORDPRESS_U,
+          wpcom_pass: process.env.WORDPRESS_P,
+        },
+        verboseOutput: false,
       },
     },
-    `gatsby-transformer-sharp`,
-    `gatsby-plugin-sharp`,
-    `gatsby-plugin-glamor`,
+    'gatsby-plugin-react-helmet',
     {
-      resolve: `gatsby-plugin-typography`,
+      resolve: 'gatsby-plugin-manifest',
       options: {
-        pathToConfigModule: `src/utils/typography.js`,
+        name: 'Wordpress Blog PWA',
+        short_name: 'Blog PWA',
+        start_url: '/blog',
+        background_color: '#1d69ab',
+        theme_color: '#1d69ab',
+        display: 'standalone',
+        icon: path.join(__dirname, 'src/images/logo.png'),
       },
     },
+    'gatsby-plugin-sitemap',
+    {
+      resolve: 'gatsby-plugin-robots-txt',
+      options: {
+        host: siteUrl,
+        sitemap: `${siteUrl}/sitemap.xml`,
+        policy: [{ userAgent: '*', disallow: '' }],
+      },
+    },
+    'gatsby-plugin-offline',
+    'gatsby-transformer-sharp',
+    'gatsby-plugin-sharp',
   ],
-}
+};
